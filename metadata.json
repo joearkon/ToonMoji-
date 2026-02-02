@@ -1,0 +1,5 @@
+{
+  "name": "ToonMoji GenAI",
+  "description": "Transform your photos into stylized cartoon characters and generate custom sticker packs using Gemini 3 Pro.",
+  "requestFramePermissions": []
+}
