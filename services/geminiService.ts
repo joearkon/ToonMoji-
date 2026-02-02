@@ -15,17 +15,42 @@ export const checkAndSelectApiKey = async (): Promise<boolean> => {
   return false; // Fallback for dev environments if wrapper not present
 };
 
+// Helper to get API Key from various sources
+export const getApiKey = (): string => {
+  // 1. Check Environment Variable (Vite/Build injection)
+  if (process.env.API_KEY) {
+    return process.env.API_KEY;
+  }
+  
+  // 2. Check Local Storage (User Input)
+  const storedKey = localStorage.getItem('gemini_api_key');
+  if (storedKey) {
+    return storedKey;
+  }
+
+  // 3. Fail
+  throw new Error("API Key missing. Please configure it in settings.");
+};
+
 export const generateStickerSheet = async (
   base64Image: string,
   style: StyleOption,
   count: number,
   emotions: string[] // Internal strings (usually english or id)
 ): Promise<string> => {
-  // Ensure we have a key selected before initializing
+  // Check IDX/AI Studio context first
   await checkAndSelectApiKey();
 
-  // Initialize fresh to pick up any newly selected key
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  // Initialize with dynamic key retrieval
+  let apiKey = "";
+  try {
+    apiKey = getApiKey();
+  } catch (e) {
+    // If getting key fails, propagate error so UI handles it
+    throw new Error("Missing API Key. Please click the Key icon to configure.");
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
 
   // Remove data:image/...;base64, prefix if present
   const cleanBase64 = base64Image.split(',')[1] || base64Image;
@@ -124,7 +149,15 @@ export const generateStickerAnimation = async (
   styleLabel: string
 ): Promise<string> => {
   await checkAndSelectApiKey();
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  
+  let apiKey = "";
+  try {
+    apiKey = getApiKey();
+  } catch (e) {
+    throw new Error("Missing API Key. Please click the Key icon to configure.");
+  }
+  
+  const ai = new GoogleGenAI({ apiKey });
   const cleanBase64 = stickerBase64.split(',')[1] || stickerBase64;
 
   const prompt = `
@@ -172,7 +205,7 @@ export const generateStickerAnimation = async (
     }
 
     // 4. Fetch the actual bytes using the key
-    const videoResponse = await fetch(`${videoUri}&key=${process.env.API_KEY}`);
+    const videoResponse = await fetch(`${videoUri}&key=${apiKey}`);
     const videoBlob = await videoResponse.blob();
     return URL.createObjectURL(videoBlob);
 

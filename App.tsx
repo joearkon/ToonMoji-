@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, ArrowRight, ArrowLeft, Wand2, Download, RefreshCw, Image as ImageIcon, Smile, Settings, Languages, ChevronLeft, ChevronRight, FileArchive, Scissors } from 'lucide-react';
+import { Upload, ArrowRight, ArrowLeft, Wand2, Download, RefreshCw, Image as ImageIcon, Smile, Settings, Languages, ChevronLeft, ChevronRight, FileArchive, Scissors, Key, X, ExternalLink, Save } from 'lucide-react';
 import { AppStep, GenerationConfig, StyleOption, Language, ProcessedSticker } from './types';
 import { CARTOON_STYLES, PRESET_EMOTIONS, UI_TEXT } from './constants';
 import { generateStickerSheet } from './services/geminiService';
@@ -22,6 +22,10 @@ const App: React.FC = () => {
   const [isZipping, setIsZipping] = useState(false);
   const [isPreparingDownload, setIsPreparingDownload] = useState(false);
   
+  // API Key Modal State
+  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+  const [userApiKey, setUserApiKey] = useState('');
+
   // Editor State
   const [editingSticker, setEditingSticker] = useState<ProcessedSticker | null>(null);
   const [editingEmotion, setEditingEmotion] = useState<string>(''); // Track which emotion maps to the sticker
@@ -41,6 +45,12 @@ const App: React.FC = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const t = UI_TEXT;
+
+  // Load API Key from local storage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem('gemini_api_key');
+    if (stored) setUserApiKey(stored);
+  }, []);
 
   // Auto-process stickers when result is ready
   useEffect(() => {
@@ -92,6 +102,35 @@ const App: React.FC = () => {
     }
   };
 
+  const handleOpenApiKeySettings = async () => {
+    // If running in a specific Google environment with wrapper, try that first
+    const win = window as any;
+    if (win.aistudio && win.aistudio.openSelectKey) {
+       try {
+         await win.aistudio.openSelectKey();
+         setError(null);
+         return;
+       } catch (e) {
+         console.error(e);
+       }
+    }
+    // Fallback to manual modal
+    setShowApiKeyModal(true);
+  };
+
+  const handleSaveApiKey = () => {
+    if (userApiKey.trim()) {
+      localStorage.setItem('gemini_api_key', userApiKey.trim());
+      setShowApiKeyModal(false);
+      setError(null);
+    }
+  };
+
+  const handleClearApiKey = () => {
+    localStorage.removeItem('gemini_api_key');
+    setUserApiKey('');
+  };
+
   const handleGenerate = async () => {
     if (!sourceImage) return;
 
@@ -137,6 +176,10 @@ const App: React.FC = () => {
     } catch (err: any) {
       setError(err.message || t.errorGenFailed[lang]);
       setCurrentStep(AppStep.CONFIG);
+      // Auto open modal if key is missing/invalid
+      if (err.message && (err.message.includes("API Key") || err.message.includes("401") || err.message.includes("403"))) {
+         setShowApiKeyModal(true);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -213,6 +256,62 @@ const App: React.FC = () => {
           emotionLabel={editingEmotion}
           styleLabel={selectedStyle.label.en}
         />
+      )}
+
+      {/* API Key Modal */}
+      {showApiKeyModal && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md shadow-2xl p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <Key className="text-indigo-400" size={20} />
+                {t.apiKeyTitle[lang]}
+              </h3>
+              <button onClick={() => setShowApiKeyModal(false)} className="text-slate-400 hover:text-white">
+                <X size={24} />
+              </button>
+            </div>
+            
+            <p className="text-slate-300 text-sm mb-4">
+              {t.apiKeyDesc[lang]}
+            </p>
+
+            <div className="space-y-4">
+              <input 
+                type="password" 
+                value={userApiKey}
+                onChange={(e) => setUserApiKey(e.target.value)}
+                placeholder={t.apiKeyPlaceholder[lang]}
+                className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:border-indigo-500 text-white"
+              />
+              
+              <div className="flex gap-3">
+                <Button fullWidth onClick={handleSaveApiKey}>
+                  <Save size={18} /> {t.saveKey[lang]}
+                </Button>
+                {userApiKey && (
+                  <Button variant="secondary" onClick={handleClearApiKey}>
+                    {t.clearKey[lang]}
+                  </Button>
+                )}
+              </div>
+
+              <div className="pt-4 border-t border-slate-800 text-center space-y-2">
+                 <a 
+                  href="https://aistudio.google.com/app/apikey" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center justify-center gap-1"
+                 >
+                   {t.getKeyLink[lang]} <ExternalLink size={12} />
+                 </a>
+                 <p className="text-[10px] text-slate-600">
+                   {t.apiKeyEnvTip[lang]}
+                 </p>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Header */}
@@ -491,10 +590,22 @@ const App: React.FC = () => {
                   </div>
                 </div>
               </div>
+              
+              {/* API Key Configuration Button */}
+              <div className="mt-4 flex justify-end">
+                 <button onClick={handleOpenApiKeySettings} className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1">
+                    <Key size={12} /> {t.configureApiKey[lang]}
+                 </button>
+              </div>
 
               {error && (
-                 <div className="mt-6 p-4 bg-red-500/10 border border-red-500/50 text-red-200 rounded-lg text-sm text-center">
-                   {error}
+                 <div className="mt-6 p-4 bg-red-500/10 border border-red-500/50 text-red-200 rounded-lg text-sm text-center flex flex-col items-center gap-2">
+                   <span>{error}</span>
+                   {error.includes("API Key") && (
+                     <Button size="sm" variant="outline" onClick={handleOpenApiKeySettings} className="mt-2 border-red-400 text-red-200 hover:bg-red-900/50">
+                        {t.configureApiKey[lang]}
+                     </Button>
+                   )}
                  </div>
               )}
 

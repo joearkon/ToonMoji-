@@ -189,6 +189,16 @@ export const UI_TEXT: Record<string, LocalizedString> = {
   customPlaceholder: { en: 'e.g. Eating noodles', zh: '例如：吃面条' },
   add: { en: 'Add', zh: '添加' },
   generateBtn: { en: 'Generate Sticker Pack', zh: '生成表情包' },
+  
+  // API Key UI
+  configureApiKey: { en: 'Settings', zh: '设置 Key' },
+  apiKeyTitle: { en: 'Gemini API Configuration', zh: 'Gemini API 配置' },
+  apiKeyDesc: { en: 'Enter your Gemini API Key to use the application. It will be stored locally in your browser.', zh: '请输入您的 Gemini API Key 以使用此应用。它将安全地存储在您的浏览器本地缓存中。' },
+  apiKeyPlaceholder: { en: 'Paste your API Key here (starts with AIza...)', zh: '在此粘贴您的 API Key (以 AIza 开头...)' },
+  saveKey: { en: 'Save API Key', zh: '保存 Key' },
+  clearKey: { en: 'Clear Key', zh: '清除 Key' },
+  getKeyLink: { en: 'Get a key from Google AI Studio', zh: '前往 Google AI Studio 获取 Key' },
+  apiKeyEnvTip: { en: 'Tip: For permanent setup, use environment variables in your deployment settings.', zh: '提示：对于永久部署，建议在部署平台设置环境变量。' },
 
   // Generating
   genTitle: { en: 'Creating your masterpieces...', zh: '正在创作您的杰作...' },
