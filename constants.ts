@@ -1,5 +1,6 @@
-import { StyleOption, EmotionOption, LocalizedString } from './types';
+import { StyleOption, EmotionOption, LocalizedString, ThemeConfig } from './types';
 
+// ... (Existing styles remain unchanged, just exported correctly)
 export const CARTOON_STYLES: StyleOption[] = [
   {
     id: 'meme_sticker',
@@ -146,6 +147,75 @@ export const PRESET_EMOTIONS: EmotionOption[] = [
   { id: 'Cool', label: { en: 'Cool', zh: '酷/墨镜' } },
   { id: 'Tired', label: { en: 'Tired', zh: '疲惫' } },
   { id: 'Thinking', label: { en: 'Thinking', zh: '思考' } },
+];
+
+export const THEMES: ThemeConfig[] = [
+  {
+    id: 'cosmic',
+    name: { en: 'Cosmic (Dark)', zh: '深空 (暗色)' },
+    colors: {
+      bg: 'bg-slate-900',
+      panel: 'bg-slate-800/50',
+      panelBorder: 'border-slate-700',
+      text: 'text-slate-100',
+      textSecondary: 'text-slate-400',
+      accent: 'bg-indigo-600',
+      accentHover: 'hover:bg-indigo-500',
+      accentText: 'text-white',
+      secondaryBtn: 'bg-slate-800 hover:bg-slate-700',
+      secondaryBtnText: 'text-slate-300',
+      border: 'border-slate-700',
+      inputBg: 'bg-slate-950',
+      ring: 'ring-indigo-500',
+      blob1: 'bg-indigo-500/10',
+      blob2: 'bg-purple-500/10',
+      success: 'bg-emerald-600',
+    }
+  },
+  {
+    id: 'gallery',
+    name: { en: 'Gallery (Light)', zh: '画廊 (灰白)' },
+    colors: {
+      bg: 'bg-stone-50',
+      panel: 'bg-white shadow-xl shadow-stone-200/50',
+      panelBorder: 'border-stone-200',
+      text: 'text-stone-800',
+      textSecondary: 'text-stone-500',
+      accent: 'bg-stone-900',
+      accentHover: 'hover:bg-stone-700',
+      accentText: 'text-stone-50',
+      secondaryBtn: 'bg-stone-200 hover:bg-stone-300',
+      secondaryBtnText: 'text-stone-700',
+      border: 'border-stone-200',
+      inputBg: 'bg-stone-100',
+      ring: 'ring-stone-400',
+      blob1: 'bg-stone-300/20',
+      blob2: 'bg-gray-400/20',
+      success: 'bg-emerald-600',
+    }
+  },
+  {
+    id: 'matcha',
+    name: { en: 'Matcha (Soft)', zh: '抹茶 (清新)' },
+    colors: {
+      bg: 'bg-emerald-50',
+      panel: 'bg-white/90 shadow-xl shadow-emerald-100',
+      panelBorder: 'border-emerald-100',
+      text: 'text-emerald-950',
+      textSecondary: 'text-emerald-600/80',
+      accent: 'bg-emerald-500',
+      accentHover: 'hover:bg-emerald-400',
+      accentText: 'text-white',
+      secondaryBtn: 'bg-emerald-100/50 hover:bg-emerald-200/50',
+      secondaryBtnText: 'text-emerald-800',
+      border: 'border-emerald-100',
+      inputBg: 'bg-emerald-50/50',
+      ring: 'ring-emerald-400',
+      blob1: 'bg-emerald-300/20',
+      blob2: 'bg-teal-300/20',
+      success: 'bg-emerald-600',
+    }
+  }
 ];
 
 export const UI_TEXT: Record<string, LocalizedString> = {

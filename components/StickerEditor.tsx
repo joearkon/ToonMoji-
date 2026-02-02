@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Play, Download, Loader2, Sparkles, Wand2, Zap } from 'lucide-react';
-import { ProcessedSticker, AnimationEffect, Language } from '../types';
+import { ProcessedSticker, AnimationEffect, Language, ThemeConfig } from '../types';
 import { createStickerGif, convertVideoToGif } from '../services/imageProcessor';
 import { generateStickerAnimation } from '../services/geminiService';
 import { Button } from './Button';
@@ -12,6 +12,7 @@ interface StickerEditorProps {
   lang: Language;
   emotionLabel: string;
   styleLabel: string;
+  theme: ThemeConfig;
 }
 
 const EFFECTS: { id: AnimationEffect; label: { en: string; zh: string } }[] = [
@@ -29,7 +30,8 @@ export const StickerEditor: React.FC<StickerEditorProps> = ({
   onClose, 
   lang,
   emotionLabel,
-  styleLabel
+  styleLabel,
+  theme
 }) => {
   const [activeTab, setActiveTab] = useState<'basic' | 'ai'>('basic');
   const [selectedEffect, setSelectedEffect] = useState<AnimationEffect>('none');
@@ -119,25 +121,27 @@ export const StickerEditor: React.FC<StickerEditorProps> = ({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-      <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl flex flex-col overflow-hidden max-h-[90vh]">
+      <div className={`${theme.colors.bg} ${theme.colors.border} border rounded-2xl w-full max-w-lg shadow-2xl flex flex-col overflow-hidden max-h-[90vh]`}>
         
         {/* Header */}
-        <div className="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/50">
-          <h3 className="text-lg font-bold text-white flex items-center gap-2">
-            <Play size={18} className="text-indigo-400" />
+        <div className={`p-4 border-b ${theme.colors.border} flex justify-between items-center bg-opacity-50`}>
+          <h3 className={`text-lg font-bold ${theme.colors.text} flex items-center gap-2`}>
+            <Play size={18} />
             {lang === 'en' ? 'Sticker Motion Studio' : '表情动效工作室'}
           </h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
+          <button onClick={onClose} className={`${theme.colors.textSecondary} hover:${theme.colors.text} transition-colors`}>
             <X size={24} />
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-slate-800">
+        <div className={`flex border-b ${theme.colors.border}`}>
           <button
             onClick={() => { setActiveTab('basic'); setPreviewUrl(sticker.src); setSelectedEffect('none'); }}
             className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors
-              ${activeTab === 'basic' ? 'text-indigo-400 bg-slate-800/50 border-b-2 border-indigo-500' : 'text-slate-400 hover:text-slate-200'}
+              ${activeTab === 'basic' 
+                ? `${theme.colors.text} bg-opacity-50 border-b-2 border-current` 
+                : `${theme.colors.textSecondary} hover:${theme.colors.text}`}
             `}
           >
             <Zap size={16} />
@@ -146,7 +150,9 @@ export const StickerEditor: React.FC<StickerEditorProps> = ({
           <button
             onClick={() => { setActiveTab('ai'); if(aiGifUrl) setPreviewUrl(aiGifUrl); }}
             className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors
-              ${activeTab === 'ai' ? 'text-indigo-400 bg-slate-800/50 border-b-2 border-indigo-500' : 'text-slate-400 hover:text-slate-200'}
+              ${activeTab === 'ai' 
+                ? `${theme.colors.text} bg-opacity-50 border-b-2 border-current` 
+                : `${theme.colors.textSecondary} hover:${theme.colors.text}`}
             `}
           >
             <Sparkles size={16} />
@@ -155,13 +161,13 @@ export const StickerEditor: React.FC<StickerEditorProps> = ({
         </div>
 
         {/* Preview Area */}
-        <div className="p-8 flex items-center justify-center bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-slate-800/50 relative">
+        <div className={`p-8 flex items-center justify-center bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] ${theme.colors.panel} relative`}>
           <div className="relative w-[240px] h-[240px] flex items-center justify-center">
             {(isProcessingBasic || isGeneratingAI) && (
-              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-900/70 rounded-lg backdrop-blur-sm p-4 text-center">
-                <Loader2 className="animate-spin text-indigo-400 mb-2" size={40} />
+              <div className={`absolute inset-0 z-10 flex flex-col items-center justify-center rounded-lg backdrop-blur-sm p-4 text-center ${theme.colors.panel} bg-opacity-80`}>
+                <Loader2 className={`animate-spin mb-2 ${theme.colors.text}`} size={40} />
                 {isGeneratingAI && (
-                  <p className="text-xs text-indigo-200">
+                  <p className={`text-xs ${theme.colors.textSecondary}`}>
                     {lang === 'en' ? 'Creating video & converting to GIF...' : '正在生成视频并转为 GIF...'}
                     <br/>
                     <span className="opacity-70">(~20s)</span>
@@ -186,17 +192,17 @@ export const StickerEditor: React.FC<StickerEditorProps> = ({
           </div>
           
           {/* Emotion Label Badge */}
-          <div className="absolute top-4 left-4 bg-slate-900/80 px-3 py-1 rounded-full text-xs font-medium text-white border border-slate-700">
+          <div className={`absolute top-4 left-4 ${theme.colors.secondaryBtn} px-3 py-1 rounded-full text-xs font-medium ${theme.colors.secondaryBtnText} border ${theme.colors.border}`}>
             {emotionLabel}
           </div>
         </div>
 
         {/* Controls */}
-        <div className="p-6 bg-slate-900 space-y-6 flex-1 overflow-y-auto">
+        <div className={`p-6 ${theme.colors.bg} space-y-6 flex-1 overflow-y-auto`}>
           
           {activeTab === 'basic' ? (
             <div>
-              <label className="text-sm font-medium text-slate-400 mb-3 block">
+              <label className={`text-sm font-medium ${theme.colors.textSecondary} mb-3 block`}>
                 {lang === 'en' ? 'Choose Animation Effect' : '选择动画效果'}
               </label>
               <div className="grid grid-cols-3 gap-3">
@@ -207,8 +213,8 @@ export const StickerEditor: React.FC<StickerEditorProps> = ({
                     className={`
                       py-2 px-3 rounded-lg text-sm font-medium transition-all border
                       ${selectedEffect === effect.id 
-                        ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-900/50' 
-                        : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:border-slate-600'}
+                        ? `${theme.colors.accent} ${theme.colors.accentText} border-transparent shadow-md` 
+                        : `${theme.colors.secondaryBtn} ${theme.colors.border} ${theme.colors.textSecondary} hover:${theme.colors.text}`}
                     `}
                   >
                     {effect.label[lang]}
@@ -218,12 +224,12 @@ export const StickerEditor: React.FC<StickerEditorProps> = ({
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="bg-indigo-900/20 p-4 rounded-lg border border-indigo-500/20">
-                <h4 className="text-sm font-bold text-indigo-300 mb-1 flex items-center gap-2">
+              <div className={`p-4 rounded-lg border ${theme.colors.border} ${theme.colors.panel}`}>
+                <h4 className={`text-sm font-bold mb-1 flex items-center gap-2 ${theme.colors.text}`}>
                    <Wand2 size={14} /> 
                    {lang === 'en' ? 'Generative Motion' : '生成式动效'}
                 </h4>
-                <p className="text-xs text-indigo-200/70 leading-relaxed">
+                <p className={`text-xs ${theme.colors.textSecondary} leading-relaxed`}>
                   {lang === 'en' 
                     ? `Uses Gemini Veo to generate a unique animation based on the "${emotionLabel}" emotion. This takes about 30 seconds.` 
                     : `使用 Gemini Veo 根据“${emotionLabel}”表情生成独特的动画。这大约需要 30 秒。`}
@@ -231,7 +237,7 @@ export const StickerEditor: React.FC<StickerEditorProps> = ({
               </div>
 
               {!aiGifUrl && !isGeneratingAI && (
-                 <Button fullWidth onClick={handleAiGenerate} className="bg-gradient-to-r from-indigo-600 to-purple-600">
+                 <Button fullWidth onClick={handleAiGenerate} className={`${theme.colors.accent} ${theme.colors.accentText} ${theme.colors.accentHover}`}>
                    <Sparkles size={16} /> 
                    {lang === 'en' ? 'Generate AI Animation' : '生成 AI 动画'}
                  </Button>
@@ -245,13 +251,13 @@ export const StickerEditor: React.FC<StickerEditorProps> = ({
             </div>
           )}
 
-          <div className="flex gap-3 pt-4 border-t border-slate-800">
-            <Button variant="secondary" onClick={onClose} className="flex-1">
+          <div className={`flex gap-3 pt-4 border-t ${theme.colors.border}`}>
+            <Button variant="secondary" onClick={onClose} className={`flex-1 ${theme.colors.secondaryBtn} ${theme.colors.secondaryBtnText}`}>
               {lang === 'en' ? 'Close' : '关闭'}
             </Button>
             <Button 
               onClick={handleDownload} 
-              className="flex-[2]" 
+              className={`flex-[2] ${theme.colors.accent} ${theme.colors.accentText} ${theme.colors.accentHover}`}
               disabled={isProcessingBasic || isGeneratingAI || (activeTab === 'ai' && !aiGifUrl)}
             >
               <Download size={18} />

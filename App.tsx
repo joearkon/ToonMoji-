@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, ArrowRight, ArrowLeft, Wand2, Download, RefreshCw, Image as ImageIcon, Smile, Settings, Languages, ChevronLeft, ChevronRight, FileArchive, Scissors, Key, X, ExternalLink, Save } from 'lucide-react';
-import { AppStep, GenerationConfig, StyleOption, Language, ProcessedSticker } from './types';
-import { CARTOON_STYLES, PRESET_EMOTIONS, UI_TEXT } from './constants';
+import { Upload, ArrowRight, ArrowLeft, Wand2, Download, RefreshCw, Image as ImageIcon, Smile, Settings, Languages, ChevronLeft, ChevronRight, FileArchive, Scissors, Key, X, ExternalLink, Save, Palette } from 'lucide-react';
+import { AppStep, StyleOption, Language, ProcessedSticker, ThemeConfig } from './types';
+import { CARTOON_STYLES, PRESET_EMOTIONS, UI_TEXT, THEMES } from './constants';
 import { generateStickerSheet } from './services/geminiService';
 import { extractStickers, createZipFromStickers, processImageForDownload } from './services/imageProcessor';
 import { StepIndicator } from './components/StepIndicator';
@@ -15,6 +15,9 @@ const App: React.FC = () => {
   const [sourceImage, setSourceImage] = useState<string | null>(null);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [processedStickers, setProcessedStickers] = useState<ProcessedSticker[]>([]);
+  
+  // Theme State
+  const [currentThemeId, setCurrentThemeId] = useState<string>('gallery'); // Default to Light theme as requested
   
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -46,11 +49,28 @@ const App: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const t = UI_TEXT;
 
+  // Derived Theme
+  const theme = THEMES.find(t => t.id === currentThemeId) || THEMES[1];
+
   // Load API Key from local storage on mount
   useEffect(() => {
     const stored = localStorage.getItem('gemini_api_key');
     if (stored) setUserApiKey(stored);
+    
+    // Optional: Load saved theme
+    const savedTheme = localStorage.getItem('toonmoji_theme');
+    if (savedTheme && THEMES.some(t => t.id === savedTheme)) {
+        setCurrentThemeId(savedTheme);
+    }
   }, []);
+
+  const switchTheme = () => {
+      const currentIndex = THEMES.findIndex(t => t.id === currentThemeId);
+      const nextIndex = (currentIndex + 1) % THEMES.length;
+      const nextTheme = THEMES[nextIndex].id;
+      setCurrentThemeId(nextTheme);
+      localStorage.setItem('toonmoji_theme', nextTheme);
+  };
 
   // Auto-process stickers when result is ready
   useEffect(() => {
@@ -245,7 +265,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
+    <div className={`min-h-screen flex flex-col font-sans selection:bg-indigo-500 selection:text-white transition-colors duration-500 ${theme.colors.bg} ${theme.colors.text}`}>
       {/* Editor Modal */}
       {editingSticker && (
         <StickerEditor 
@@ -255,24 +275,25 @@ const App: React.FC = () => {
           lang={lang}
           emotionLabel={editingEmotion}
           styleLabel={selectedStyle.label.en}
+          theme={theme}
         />
       )}
 
       {/* API Key Modal */}
       {showApiKeyModal && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md shadow-2xl p-6">
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className={`${theme.colors.panel} border ${theme.colors.border} rounded-2xl w-full max-w-md shadow-2xl p-6`}>
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+              <h3 className={`text-xl font-bold flex items-center gap-2 ${theme.colors.text}`}>
                 <Key className="text-indigo-400" size={20} />
                 {t.apiKeyTitle[lang]}
               </h3>
-              <button onClick={() => setShowApiKeyModal(false)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setShowApiKeyModal(false)} className={`${theme.colors.textSecondary} hover:${theme.colors.text}`}>
                 <X size={24} />
               </button>
             </div>
             
-            <p className="text-slate-300 text-sm mb-4">
+            <p className={`${theme.colors.textSecondary} text-sm mb-4`}>
               {t.apiKeyDesc[lang]}
             </p>
 
@@ -282,21 +303,29 @@ const App: React.FC = () => {
                 value={userApiKey}
                 onChange={(e) => setUserApiKey(e.target.value)}
                 placeholder={t.apiKeyPlaceholder[lang]}
-                className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:border-indigo-500 text-white"
+                className={`w-full ${theme.colors.inputBg} border ${theme.colors.border} rounded-lg px-4 py-3 focus:outline-none focus:${theme.colors.ring} ${theme.colors.text}`}
               />
               
               <div className="flex gap-3">
-                <Button fullWidth onClick={handleSaveApiKey}>
+                <Button 
+                    fullWidth 
+                    onClick={handleSaveApiKey}
+                    className={`${theme.colors.accent} ${theme.colors.accentText} ${theme.colors.accentHover}`}
+                >
                   <Save size={18} /> {t.saveKey[lang]}
                 </Button>
                 {userApiKey && (
-                  <Button variant="secondary" onClick={handleClearApiKey}>
+                  <Button 
+                    variant="secondary" 
+                    onClick={handleClearApiKey}
+                    className={`${theme.colors.secondaryBtn} ${theme.colors.secondaryBtnText}`}
+                  >
                     {t.clearKey[lang]}
                   </Button>
                 )}
               </div>
 
-              <div className="pt-4 border-t border-slate-800 text-center space-y-2">
+              <div className={`pt-4 border-t ${theme.colors.border} text-center space-y-2`}>
                  <a 
                   href="https://aistudio.google.com/app/apikey" 
                   target="_blank" 
@@ -305,7 +334,7 @@ const App: React.FC = () => {
                  >
                    {t.getKeyLink[lang]} <ExternalLink size={12} />
                  </a>
-                 <p className="text-[10px] text-slate-600">
+                 <p className={`text-[10px] ${theme.colors.textSecondary}`}>
                    {t.apiKeyEnvTip[lang]}
                  </p>
               </div>
@@ -315,26 +344,34 @@ const App: React.FC = () => {
       )}
 
       {/* Header */}
-      <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
+      <header className={`border-b ${theme.colors.border} ${theme.colors.panel} backdrop-blur-md sticky top-0 z-50 transition-colors duration-500`}>
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="bg-gradient-to-r from-indigo-500 to-purple-500 p-2 rounded-lg">
+            <div className={`p-2 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500`}>
               <Smile size={24} className="text-white" />
             </div>
-            <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
+            <h1 className={`text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r ${currentThemeId === 'cosmic' ? 'from-white to-slate-400' : 'from-indigo-600 to-purple-600'}`}>
               {t.title[lang]}
             </h1>
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <button 
+                onClick={switchTheme}
+                className={`flex items-center gap-1.5 text-xs sm:text-sm font-medium transition-colors px-3 py-1.5 rounded-full border ${theme.colors.secondaryBtn} ${theme.colors.secondaryBtnText} ${theme.colors.border}`}
+                title="Switch Theme"
+            >
+                <Palette size={14} />
+                {theme.name[lang]}
+            </button>
              <button 
               onClick={() => setLang(lang === 'en' ? 'zh' : 'en')}
-              className="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-slate-400 hover:text-white transition-colors bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-full border border-slate-700"
+              className={`flex items-center gap-1.5 text-xs sm:text-sm font-medium transition-colors px-3 py-1.5 rounded-full border ${theme.colors.secondaryBtn} ${theme.colors.secondaryBtnText} ${theme.colors.border}`}
             >
               <Languages size={14} />
-              {lang === 'en' ? '中文切换' : 'English Switch'}
+              {lang === 'en' ? 'CN' : 'EN'}
             </button>
-            <div className="hidden md:block text-xs text-slate-500 border border-slate-800 px-3 py-1 rounded-full">
+            <div className={`hidden md:block text-xs px-3 py-1 rounded-full border ${theme.colors.border} ${theme.colors.textSecondary}`}>
               {t.subtitle[lang]}
             </div>
           </div>
@@ -342,24 +379,26 @@ const App: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-8">
+      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-8 relative">
         
-        <StepIndicator currentStep={currentStep} lang={lang} />
+        <StepIndicator currentStep={currentStep} lang={lang} theme={theme} />
 
         {/* Content Area */}
-        <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 md:p-8 min-h-[500px] shadow-2xl relative overflow-hidden flex flex-col">
+        <div className={`${theme.colors.panel} border ${theme.colors.panelBorder} rounded-2xl p-6 md:p-8 min-h-[500px] shadow-2xl relative overflow-hidden flex flex-col transition-colors duration-500`}>
           
           {/* Background Decorative Blobs */}
-          <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 pointer-events-none"></div>
+          <div className={`absolute top-0 right-0 w-96 h-96 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none transition-colors duration-500 ${theme.colors.blob1}`}></div>
+          <div className={`absolute bottom-0 left-0 w-96 h-96 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 pointer-events-none transition-colors duration-500 ${theme.colors.blob2}`}></div>
 
           {/* STEP 1: UPLOAD */}
           {currentStep === AppStep.UPLOAD && (
-            <div className="flex-1 flex flex-col items-center justify-center min-h-[400px] animate-fade-in">
+            <div className="flex-1 flex flex-col items-center justify-center min-h-[400px] animate-fade-in z-10">
               <div 
                 className={`
                   w-full max-w-xl border-2 border-dashed rounded-2xl p-12 text-center transition-all duration-300
-                  ${sourceImage ? 'border-green-500/50 bg-green-500/5' : 'border-slate-600 hover:border-indigo-500 hover:bg-slate-700/50'}
+                  ${sourceImage 
+                    ? `border-green-500/50 bg-green-500/5` 
+                    : `${theme.colors.border} hover:border-indigo-500 ${theme.colors.inputBg}`}
                 `}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => {
@@ -387,12 +426,12 @@ const App: React.FC = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <div className="w-20 h-20 bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Upload size={32} className="text-indigo-400" />
+                    <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 ${theme.colors.secondaryBtn}`}>
+                      <Upload size={32} className={theme.colors.text} />
                     </div>
-                    <h3 className="text-xl font-semibold text-white">{t.uploadTitle[lang]}</h3>
-                    <p className="text-slate-400">{t.uploadDesc[lang]}</p>
-                    <p className="text-xs text-slate-500">{t.uploadSupport[lang]}</p>
+                    <h3 className={`text-xl font-semibold ${theme.colors.text}`}>{t.uploadTitle[lang]}</h3>
+                    <p className={theme.colors.textSecondary}>{t.uploadDesc[lang]}</p>
+                    <p className={`text-xs ${theme.colors.textSecondary}`}>{t.uploadSupport[lang]}</p>
                     <input 
                       type="file" 
                       ref={fileInputRef} 
@@ -400,7 +439,11 @@ const App: React.FC = () => {
                       accept="image/*" 
                       className="hidden" 
                     />
-                    <Button onClick={() => fileInputRef.current?.click()} variant="outline">
+                    <Button 
+                        onClick={() => fileInputRef.current?.click()} 
+                        variant="outline"
+                        className={`border-current ${theme.colors.text} hover:opacity-70`}
+                    >
                       {t.selectFile[lang]}
                     </Button>
                   </div>
@@ -411,7 +454,7 @@ const App: React.FC = () => {
                 <Button 
                   disabled={!sourceImage} 
                   onClick={() => setCurrentStep(AppStep.STYLE)}
-                  className="w-48"
+                  className={`w-48 ${theme.colors.accent} ${theme.colors.accentText} ${theme.colors.accentHover}`}
                 >
                   {t.nextStep[lang]} <ArrowRight size={18} />
                 </Button>
@@ -421,26 +464,26 @@ const App: React.FC = () => {
 
           {/* STEP 2: STYLE SELECTION */}
           {currentStep === AppStep.STYLE && (
-            <div className="animate-fade-in flex flex-col h-full">
+            <div className="animate-fade-in flex flex-col h-full z-10">
               <div className="flex flex-col md:flex-row gap-8 flex-1">
                 <div className="md:w-1/3 space-y-4">
-                  <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700">
-                    <h3 className="text-sm font-semibold text-slate-400 mb-2 uppercase tracking-wider">{t.styleRef[lang]}</h3>
+                  <div className={`${theme.colors.panel} p-4 rounded-xl border ${theme.colors.border}`}>
+                    <h3 className={`text-sm font-semibold ${theme.colors.textSecondary} mb-2 uppercase tracking-wider`}>{t.styleRef[lang]}</h3>
                     <img src={sourceImage!} alt="Original" className="w-full rounded-lg" />
                   </div>
-                  <div className="bg-indigo-900/20 p-4 rounded-xl border border-indigo-500/20">
-                    <h4 className="font-bold text-indigo-300 flex items-center gap-2">
+                  <div className={`p-4 rounded-xl border border-indigo-500/20 ${theme.id === 'cosmic' ? 'bg-indigo-900/20' : 'bg-indigo-50'}`}>
+                    <h4 className="font-bold text-indigo-500 flex items-center gap-2">
                       <Wand2 size={16} /> {t.styleTipTitle[lang]}
                     </h4>
-                    <p className="text-sm text-indigo-200 mt-2">
+                    <p className={`text-sm mt-2 ${theme.colors.textSecondary}`}>
                       {t.styleTipDesc[lang]}
                     </p>
                   </div>
                 </div>
 
                 <div className="md:w-2/3 flex flex-col">
-                  <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                    <ImageIcon className="text-indigo-400" /> {t.chooseStyle[lang]}
+                  <h2 className={`text-2xl font-bold mb-6 flex items-center gap-2 ${theme.colors.text}`}>
+                    <ImageIcon className="text-indigo-500" /> {t.chooseStyle[lang]}
                   </h2>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
@@ -451,37 +494,45 @@ const App: React.FC = () => {
                         isSelected={selectedStyle.id === style.id} 
                         onSelect={setSelectedStyle} 
                         lang={lang}
+                        theme={theme}
                       />
                     ))}
                   </div>
 
-                  <div className="flex items-center justify-between bg-slate-900/30 p-2 rounded-lg border border-slate-700 mt-auto">
+                  <div className={`flex items-center justify-between p-2 rounded-lg border ${theme.colors.border} mt-auto`}>
                     <Button 
                       variant="secondary" 
                       onClick={() => setStylePage(p => Math.max(0, p - 1))}
                       disabled={stylePage === 0}
-                      className="px-3 py-1.5 h-8 text-sm"
+                      className={`px-3 py-1.5 h-8 text-sm ${theme.colors.secondaryBtn} ${theme.colors.secondaryBtnText}`}
                     >
                       <ChevronLeft size={14} /> {t.prevPage[lang]}
                     </Button>
-                    <span className="text-sm text-slate-400">
+                    <span className={`text-sm ${theme.colors.textSecondary}`}>
                       {t.page[lang]} {stylePage + 1} / {totalPages}
                     </span>
                     <Button 
                       variant="secondary" 
                       onClick={() => setStylePage(p => Math.min(totalPages - 1, p + 1))}
                       disabled={stylePage >= totalPages - 1}
-                      className="px-3 py-1.5 h-8 text-sm"
+                      className={`px-3 py-1.5 h-8 text-sm ${theme.colors.secondaryBtn} ${theme.colors.secondaryBtnText}`}
                     >
                       {t.nextPage[lang]} <ChevronRight size={14} />
                     </Button>
                   </div>
 
                   <div className="mt-8 flex justify-between">
-                    <Button variant="secondary" onClick={() => setCurrentStep(AppStep.UPLOAD)}>
+                    <Button 
+                        variant="secondary" 
+                        onClick={() => setCurrentStep(AppStep.UPLOAD)}
+                        className={`${theme.colors.secondaryBtn} ${theme.colors.secondaryBtnText}`}
+                    >
                       <ArrowLeft size={18} /> {t.back[lang]}
                     </Button>
-                    <Button onClick={() => setCurrentStep(AppStep.CONFIG)}>
+                    <Button 
+                        onClick={() => setCurrentStep(AppStep.CONFIG)}
+                        className={`${theme.colors.accent} ${theme.colors.accentText} ${theme.colors.accentHover}`}
+                    >
                       {t.nextStep[lang]} <ArrowRight size={18} />
                     </Button>
                   </div>
@@ -492,15 +543,15 @@ const App: React.FC = () => {
 
           {/* STEP 3: CONFIGURATION */}
           {currentStep === AppStep.CONFIG && (
-            <div className="animate-fade-in max-w-4xl mx-auto w-full">
-              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                <Settings className="text-indigo-400" /> {t.configTitle[lang]}
+            <div className="animate-fade-in max-w-4xl mx-auto w-full z-10">
+              <h2 className={`text-2xl font-bold mb-6 flex items-center gap-2 ${theme.colors.text}`}>
+                <Settings className="text-indigo-500" /> {t.configTitle[lang]}
               </h2>
 
               <div className="grid md:grid-cols-2 gap-8">
                 <div className="space-y-6">
-                  <div className="bg-slate-900/50 p-6 rounded-xl border border-slate-700">
-                    <h3 className="font-semibold mb-4">{t.numStickers[lang]}</h3>
+                  <div className={`${theme.colors.panel} p-6 rounded-xl border ${theme.colors.border}`}>
+                    <h3 className={`font-semibold mb-4 ${theme.colors.text}`}>{t.numStickers[lang]}</h3>
                     <div className="flex gap-4">
                       {[3, 6, 9].map((num) => (
                         <button
@@ -509,8 +560,8 @@ const App: React.FC = () => {
                           className={`
                             flex-1 py-3 rounded-lg font-bold text-lg transition-all
                             ${expressionCount === num 
-                              ? 'bg-indigo-600 text-white ring-2 ring-indigo-400 ring-offset-2 ring-offset-slate-900' 
-                              : 'bg-slate-700 text-slate-400 hover:bg-slate-600'}
+                              ? `${theme.colors.accent} ${theme.colors.accentText} ring-2 ring-indigo-400 ring-offset-2 ring-offset-transparent` 
+                              : `${theme.colors.secondaryBtn} ${theme.colors.textSecondary} hover:opacity-80`}
                           `}
                         >
                           {num}
@@ -519,22 +570,22 @@ const App: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="bg-slate-900/50 p-6 rounded-xl border border-slate-700">
-                    <h3 className="font-semibold mb-2">{t.selectedEmotions[lang]} ({selectedEmotionIds.length}/{expressionCount})</h3>
+                  <div className={`${theme.colors.panel} p-6 rounded-xl border ${theme.colors.border}`}>
+                    <h3 className={`font-semibold mb-2 ${theme.colors.text}`}>{t.selectedEmotions[lang]} ({selectedEmotionIds.length}/{expressionCount})</h3>
                     <div className="flex flex-wrap gap-2">
                       {selectedEmotionIds.map(id => (
-                        <span key={id} className="px-3 py-1 bg-indigo-500/20 text-indigo-300 rounded-full text-sm border border-indigo-500/30 flex items-center gap-1">
+                        <span key={id} className={`px-3 py-1 rounded-full text-sm border flex items-center gap-1 ${theme.id === 'cosmic' ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30' : 'bg-indigo-50 text-indigo-700 border-indigo-200'}`}>
                           {getEmotionLabel(id)}
-                          <button onClick={() => toggleEmotion(id)} className="hover:text-white">&times;</button>
+                          <button onClick={() => toggleEmotion(id)} className="hover:opacity-70">&times;</button>
                         </span>
                       ))}
                        {customEmotion && !selectedEmotionIds.includes(customEmotion) && (
-                         <span className="px-3 py-1 bg-indigo-500/20 text-indigo-300 rounded-full text-sm border border-indigo-500/30 flex items-center gap-1">
+                         <span className={`px-3 py-1 rounded-full text-sm border flex items-center gap-1 ${theme.id === 'cosmic' ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30' : 'bg-indigo-50 text-indigo-700 border-indigo-200'}`}>
                             {customEmotion}
                          </span>
                       )}
                       {Array.from({ length: Math.max(0, expressionCount - selectedEmotionIds.length) }).map((_, i) => (
-                        <span key={`empty-${i}`} className="px-3 py-1 bg-slate-800 text-slate-600 rounded-full text-sm border border-slate-700 border-dashed">
+                        <span key={`empty-${i}`} className={`px-3 py-1 rounded-full text-sm border border-dashed ${theme.colors.textSecondary} ${theme.colors.border}`}>
                           {t.selectMore[lang]}
                         </span>
                       ))}
@@ -543,8 +594,8 @@ const App: React.FC = () => {
                 </div>
 
                 <div className="space-y-6">
-                  <div className="bg-slate-900/50 p-6 rounded-xl border border-slate-700 h-full">
-                    <h3 className="font-semibold mb-4">{t.chooseEmotions[lang]}</h3>
+                  <div className={`${theme.colors.panel} p-6 rounded-xl border ${theme.colors.border} h-full`}>
+                    <h3 className={`font-semibold mb-4 ${theme.colors.text}`}>{t.chooseEmotions[lang]}</h3>
                     <div className="flex flex-wrap gap-2 mb-4">
                       {PRESET_EMOTIONS.map((emotion) => (
                         <button
@@ -553,8 +604,8 @@ const App: React.FC = () => {
                           className={`
                             px-3 py-2 rounded-lg text-sm transition-all border
                             ${selectedEmotionIds.includes(emotion.id)
-                              ? 'bg-indigo-600 border-indigo-500 text-white'
-                              : 'bg-slate-800 border-slate-600 text-slate-300 hover:border-slate-500'}
+                              ? `${theme.colors.accent} border-transparent ${theme.colors.accentText}`
+                              : `${theme.colors.secondaryBtn} ${theme.colors.border} ${theme.colors.textSecondary} hover:${theme.colors.text}`}
                           `}
                         >
                           {emotion.label[lang]}
@@ -562,15 +613,15 @@ const App: React.FC = () => {
                       ))}
                     </div>
                     
-                    <div className="pt-4 border-t border-slate-700">
-                      <label className="text-sm text-slate-400 mb-2 block">{t.customEmotion[lang]}</label>
+                    <div className={`pt-4 border-t ${theme.colors.border}`}>
+                      <label className={`text-sm ${theme.colors.textSecondary} mb-2 block`}>{t.customEmotion[lang]}</label>
                       <div className="flex gap-2">
                         <input
                           type="text"
                           value={customEmotion}
                           onChange={(e) => setCustomEmotion(e.target.value)}
                           placeholder={t.customPlaceholder[lang]}
-                          className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                          className={`flex-1 ${theme.colors.inputBg} border ${theme.colors.border} rounded-lg px-4 py-2 text-sm focus:outline-none focus:${theme.colors.ring} ${theme.colors.text}`}
                         />
                         <Button 
                           variant="secondary" 
@@ -581,7 +632,7 @@ const App: React.FC = () => {
                             }
                           }}
                           disabled={!customEmotion}
-                          className="py-2"
+                          className={`py-2 ${theme.colors.secondaryBtn} ${theme.colors.secondaryBtnText}`}
                         >
                           {t.add[lang]}
                         </Button>
@@ -599,10 +650,10 @@ const App: React.FC = () => {
               </div>
 
               {error && (
-                 <div className="mt-6 p-4 bg-red-500/10 border border-red-500/50 text-red-200 rounded-lg text-sm text-center flex flex-col items-center gap-2">
+                 <div className="mt-6 p-4 bg-red-500/10 border border-red-500/50 text-red-500 rounded-lg text-sm text-center flex flex-col items-center gap-2">
                    <span>{error}</span>
                    {error.includes("API Key") && (
-                     <Button size="sm" variant="outline" onClick={handleOpenApiKeySettings} className="mt-2 border-red-400 text-red-200 hover:bg-red-900/50">
+                     <Button size="sm" variant="outline" onClick={handleOpenApiKeySettings} className="mt-2 border-red-400 text-red-500 hover:bg-red-50">
                         {t.configureApiKey[lang]}
                      </Button>
                    )}
@@ -610,10 +661,10 @@ const App: React.FC = () => {
               )}
 
               <div className="mt-8 flex justify-between">
-                <Button variant="secondary" onClick={() => setCurrentStep(AppStep.STYLE)}>
+                <Button variant="secondary" onClick={() => setCurrentStep(AppStep.STYLE)} className={`${theme.colors.secondaryBtn} ${theme.colors.secondaryBtnText}`}>
                   <ArrowLeft size={18} /> {t.back[lang]}
                 </Button>
-                <Button onClick={handleGenerate} className="w-48 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500">
+                <Button onClick={handleGenerate} className={`w-48 ${theme.colors.accent} ${theme.colors.accentText} ${theme.colors.accentHover}`}>
                   <Wand2 size={18} /> {t.generateBtn[lang]}
                 </Button>
               </div>
@@ -622,16 +673,16 @@ const App: React.FC = () => {
 
           {/* STEP 3.5: GENERATING */}
           {currentStep === AppStep.GENERATING && (
-            <div className="flex flex-col items-center justify-center min-h-[400px] animate-fade-in text-center">
+            <div className="flex flex-col items-center justify-center min-h-[400px] animate-fade-in text-center z-10">
               <div className="relative w-24 h-24 mb-8">
-                <div className="absolute inset-0 border-4 border-slate-700 rounded-full"></div>
+                <div className={`absolute inset-0 border-4 ${theme.colors.border} rounded-full`}></div>
                 <div className="absolute inset-0 border-4 border-t-indigo-500 border-r-indigo-500 border-b-transparent border-l-transparent rounded-full animate-spin"></div>
                 <div className="absolute inset-0 flex items-center justify-center">
-                   <Wand2 className="text-indigo-400 animate-pulse" size={32} />
+                   <Wand2 className="text-indigo-500 animate-pulse" size={32} />
                 </div>
               </div>
-              <h2 className="text-2xl font-bold text-white mb-2">{t.genTitle[lang]}</h2>
-              <p className="text-slate-400 max-w-md">
+              <h2 className={`text-2xl font-bold ${theme.colors.text} mb-2`}>{t.genTitle[lang]}</h2>
+              <p className={`${theme.colors.textSecondary} max-w-md`}>
                 {t.genDesc[lang]}
               </p>
             </div>
@@ -639,12 +690,12 @@ const App: React.FC = () => {
 
           {/* STEP 4: RESULT */}
           {currentStep === AppStep.RESULT && generatedImage && (
-             <div className="animate-fade-in flex flex-col h-full">
+             <div className="animate-fade-in flex flex-col h-full z-10">
                 <div className="flex-1 flex flex-col gap-6 min-h-[400px]">
                    
                    {/* Top Split: Original Sheet & Actions */}
                    <div className="flex flex-col md:flex-row gap-8">
-                      <div className="md:w-3/4 bg-slate-950 rounded-xl overflow-hidden border border-slate-700 relative group flex items-center justify-center min-h-[300px]">
+                      <div className={`md:w-3/4 rounded-xl overflow-hidden border ${theme.colors.border} relative group flex items-center justify-center min-h-[300px] ${theme.id === 'cosmic' ? 'bg-slate-950' : 'bg-gray-100'}`}>
                           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
                           <img 
                             src={generatedImage} 
@@ -654,16 +705,16 @@ const App: React.FC = () => {
                       </div>
 
                       <div className="md:w-1/4 space-y-4 flex flex-col">
-                          <div className="bg-slate-900/80 p-5 rounded-xl border border-slate-700 flex-1">
-                            <h3 className="font-bold text-lg mb-4 text-white">{t.resultTitle[lang]}</h3>
-                            <p className="text-sm text-slate-400 mb-6">
+                          <div className={`${theme.colors.panel} p-5 rounded-xl border ${theme.colors.border} flex-1`}>
+                            <h3 className={`font-bold text-lg mb-4 ${theme.colors.text}`}>{t.resultTitle[lang]}</h3>
+                            <p className={`text-sm ${theme.colors.textSecondary} mb-6`}>
                               {t.resultDesc[lang]}
                             </p>
                             
                             <Button 
                               onClick={handleDownload} 
                               fullWidth 
-                              className="mb-3"
+                              className={`mb-3 ${theme.colors.accent} ${theme.colors.accentText} ${theme.colors.accentHover}`}
                               disabled={isPreparingDownload}
                             >
                               {isPreparingDownload ? <div className="animate-spin w-4 h-4 border-2 border-white/30 border-t-white rounded-full"></div> : <Download size={18} />}
@@ -675,7 +726,7 @@ const App: React.FC = () => {
                               fullWidth 
                               disabled={isZipping || processedStickers.length === 0}
                               variant="primary"
-                              className="mb-3 bg-emerald-600 hover:bg-emerald-500 shadow-emerald-900/20"
+                              className={`mb-3 ${theme.colors.success} text-white hover:opacity-90 shadow-lg`}
                             >
                               {isZipping ? (
                                 <div className="animate-spin w-4 h-4 border-2 border-white/30 border-t-white rounded-full"></div>
@@ -685,34 +736,34 @@ const App: React.FC = () => {
                               {isZipping ? t.processingZip[lang] : t.downloadZip[lang]}
                             </Button>
                             
-                            <Button variant="outline" fullWidth onClick={handleGenerate}>
+                            <Button variant="outline" fullWidth onClick={handleGenerate} className={`${theme.colors.text} border-current`}>
                               <RefreshCw size={18} /> {t.regenerate[lang]}
                             </Button>
                           </div>
                           
-                          <Button variant="secondary" onClick={() => setCurrentStep(AppStep.CONFIG)} className="mt-auto">
+                          <Button variant="secondary" onClick={() => setCurrentStep(AppStep.CONFIG)} className={`mt-auto ${theme.colors.secondaryBtn} ${theme.colors.secondaryBtnText}`}>
                             <ArrowLeft size={18} /> {t.startOver[lang]}
                           </Button>
                       </div>
                    </div>
 
                    {/* Bottom: Individual Sticker Grid */}
-                   <div className="bg-slate-900/50 p-6 rounded-xl border border-slate-700">
-                     <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                       <Scissors size={20} className="text-indigo-400" />
+                   <div className={`${theme.colors.panel} p-6 rounded-xl border ${theme.colors.border}`}>
+                     <h3 className={`text-lg font-bold mb-4 flex items-center gap-2 ${theme.colors.text}`}>
+                       <Scissors size={20} className="text-indigo-500" />
                        {lang === 'en' ? 'Sticker Studio (240px)' : '表情裁剪与动效 (240px)'}
                      </h3>
                      
                      {isProcessingStickers ? (
-                       <div className="flex items-center justify-center h-40 gap-3 text-slate-400">
+                       <div className={`flex items-center justify-center h-40 gap-3 ${theme.colors.textSecondary}`}>
                          <div className="animate-spin w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full"></div>
                          {t.processingZip[lang]}
                        </div>
                      ) : (
                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
                          {processedStickers.map((sticker, index) => (
-                           <div key={sticker.id} className="group relative bg-slate-800 rounded-lg p-2 border border-slate-700 hover:border-indigo-500 transition-colors">
-                              <div className="aspect-square bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-slate-900 rounded-md overflow-hidden flex items-center justify-center mb-2">
+                           <div key={sticker.id} className={`group relative rounded-lg p-2 border ${theme.colors.border} hover:border-indigo-500 transition-colors ${theme.colors.inputBg}`}>
+                              <div className={`aspect-square bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] rounded-md overflow-hidden flex items-center justify-center mb-2 ${theme.id === 'cosmic' ? 'bg-slate-900' : 'bg-gray-100'}`}>
                                 <img src={sticker.src} alt="Sticker" className="w-full h-full object-contain" />
                               </div>
                               <button 
@@ -722,7 +773,7 @@ const App: React.FC = () => {
                                   setEditingEmotion(label);
                                   setEditingSticker(sticker);
                                 }}
-                                className="w-full py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded font-medium flex items-center justify-center gap-1"
+                                className={`w-full py-1.5 text-xs rounded font-medium flex items-center justify-center gap-1 ${theme.colors.accent} ${theme.colors.accentText} ${theme.colors.accentHover}`}
                               >
                                 <Wand2 size={12} /> {lang === 'en' ? 'Animate' : '动效'}
                               </button>
@@ -738,6 +789,23 @@ const App: React.FC = () => {
 
         </div>
       </main>
+
+      {/* Footer */}
+      <footer className={`py-8 mt-auto border-t ${theme.colors.border} ${theme.colors.panel} transition-colors duration-500`}>
+        <div className="max-w-6xl mx-auto px-4 text-center">
+          <p className={`font-medium mb-2 ${theme.colors.text}`}>
+            陈子卓野的实验室
+          </p>
+          <a 
+            href="https://beian.miit.gov.cn/" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className={`text-sm ${theme.colors.textSecondary} hover:${theme.colors.text} transition-colors`}
+          >
+            沪ICP备2025153381号-1
+          </a>
+        </div>
+      </footer>
     </div>
   );
 };
