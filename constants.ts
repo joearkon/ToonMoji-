@@ -147,6 +147,8 @@ export const PRESET_EMOTIONS: EmotionOption[] = [
   { id: 'Cool', label: { en: 'Cool', zh: '酷/墨镜' } },
   { id: 'Tired', label: { en: 'Tired', zh: '疲惫' } },
   { id: 'Thinking', label: { en: 'Thinking', zh: '思考' } },
+  { id: 'GoodNight', label: { en: 'Good Night', zh: '晚安' } },
+  { id: 'Kiss', label: { en: 'Kiss', zh: '亲亲' } },
 ];
 
 export const THEMES: ThemeConfig[] = [
